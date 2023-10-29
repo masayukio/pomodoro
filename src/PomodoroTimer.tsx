@@ -1,4 +1,4 @@
-import React, {useEffect, useReducer} from 'react';
+import React, {useEffect, useReducer, useState} from 'react';
 
 interface PomodoroState {
     timeRemaining: number;
@@ -13,7 +13,7 @@ const initialState: PomodoroState = {
 
 type PomodoroAction =
     | { type: 'START_TIMER' }
-    | { type: 'RESET_TIMER' }
+    | { type: 'RESET_TIMER', payload: number }
     | { type: 'TICK' }
     ;
 
@@ -23,7 +23,7 @@ const reducer = (state: PomodoroState, action: PomodoroAction): PomodoroState =>
         case 'START_TIMER':
             return {...state, isRunning: true};
         case 'RESET_TIMER':
-            return {...state, isRunning: false, timeRemaining: 25 * 60};
+            return {...state, isRunning: false, timeRemaining: action.payload};
         case 'TICK':
             return {...state, timeRemaining: state.timeRemaining - 1};
         default:
@@ -33,6 +33,13 @@ const reducer = (state: PomodoroState, action: PomodoroAction): PomodoroState =>
 
 const PomodoroTimer: React.FC = () => {
     const [state, dispatch] = useReducer(reducer, initialState);
+    const [selectedTime, setSelectedTime] = useState(25);  // 選択された時間を状態として追加
+
+    const handleTimeChange = (newTime: number) => {
+        setSelectedTime(newTime);
+        dispatch({type: 'RESET_TIMER', payload: newTime * 60});
+    };
+
     let beepAudioContext: AudioContext | null = null;
     const playBeepSound = () => {
         if (beepAudioContext) {
@@ -72,7 +79,7 @@ const PomodoroTimer: React.FC = () => {
     };
 
     const handleReset = () => {
-        dispatch({type: 'RESET_TIMER'});
+        dispatch({type: 'RESET_TIMER', payload: selectedTime * 60});
     };
 
     const formatTime = (seconds: number) => {
@@ -87,7 +94,7 @@ const PomodoroTimer: React.FC = () => {
             <h1>Pomodoro Timer</h1>
             <svg viewBox="0 0 200 200">
                 <circle
-                    stroke="lime"
+                    stroke="red"
                     fill="transparent"
                     strokeWidth="10"
                     r="90"
@@ -95,7 +102,7 @@ const PomodoroTimer: React.FC = () => {
                     cy="100"
                 />
                 <circle
-                    stroke="whitesmoke"
+                    stroke="#FFE6F1"
                     fill="transparent"
                     strokeWidth="10"
                     strokeDasharray="565.48 565.48"
@@ -131,7 +138,7 @@ const PomodoroTimer: React.FC = () => {
                         fontSize="16"
                         fill={state.isRunning ? "grey" : "#000"}
                         onClick={handleStart}
-                        style={{ cursor: 'pointer' }}
+                        style={{cursor: 'pointer'}}
                     >
                         Start
                     </text>
@@ -151,12 +158,25 @@ const PomodoroTimer: React.FC = () => {
                         fontSize="16"
                         fill={!state.isRunning ? "grey" : "#000"}
                         onClick={handleReset}
-                        style={{ cursor: 'pointer' }}
+                        style={{cursor: 'pointer'}}
                     >
                         Reset
                     </text>
                 </g>
             </svg>
+            <div className="time-selection">
+                <span>Select Time: </span>
+                {[10, 15, 20, 25].map((time) => (
+                    <button
+                        key={time}
+                        disabled={state.isRunning}
+                        onClick={() => handleTimeChange(time)}
+                        className={selectedTime === time ? 'selected' : ''}
+                    >
+                        {time} min
+                    </button>
+                ))}
+            </div>
         </div>
     );
 };
